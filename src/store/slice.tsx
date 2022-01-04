@@ -3,7 +3,8 @@ import axios from 'axios'
 import { RecipeModel, IngredientModel } from '../models'
 import { RootState } from './store'
 
-export interface CounterState {
+export interface AppState {
+  isAuthenticated: boolean
   value: number
   ingredient: string
   recipes: RecipeModel[]
@@ -20,7 +21,8 @@ const createId = () => {
 export const name = 'slice'
 const port = 'http://localhost:4000'
 
-export const initialState: CounterState = {
+export const initialState: AppState = {
+  isAuthenticated: false,
   value: 0,
   ingredient: 'Spagethi',
   recipes: [],
@@ -50,7 +52,7 @@ export const createRecipe = createAsyncThunk(`${name}/createRecipe`, async (_, t
   const emptyRecipe: RecipeModel = {
     Name: 'New recipe',
     Id: createId(),
-    Category: (currentState.slice as CounterState).activeCategory,
+    Category: (currentState.slice as AppState).activeCategory,
     Ingredients: [],
   }
   const res = await axios.post(`${port}/Recipes`, emptyRecipe)
@@ -107,14 +109,11 @@ const counterSlice: any = createSlice({
     setActiveCategory(state, action) {
       state.activeCategory = action.payload
     },
-    increment(state) {
-      state.value++
-    },
-    decrement(state) {
-      state.value--
+    setAuthenticationStatus(state, action) {
+      state.isAuthenticated = action.payload
     },
   },
 })
 
-export const { setActiveCategory, increment, decrement } = counterSlice.actions
+export const { setActiveCategory, setAuthenticationStatus } = counterSlice.actions
 export default counterSlice.reducer

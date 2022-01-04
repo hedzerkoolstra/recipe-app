@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import { setAuthenticationStatus } from '../store/slice'
 import firebase from 'firebase/compat/app'
 import 'firebase/compat/auth'
 import 'firebase/compat/firestore'
@@ -10,6 +12,9 @@ import {
 } from 'firebase/auth'
 
 const Login = () => {
+  const isAuthenticated = useSelector(({ slice: state }: any) => state.isAuthenticated)
+
+  const dispatch = useDispatch()
   const firebaseConfig = {
     apiKey: 'AIzaSyC4ABtTF8FBXSLLG1OKk_JtYKdIYFWKz5c',
     authDomain: 'recipeapp-431a0.firebaseapp.com',
@@ -20,8 +25,7 @@ const Login = () => {
   }
 
   firebase.initializeApp(firebaseConfig)
-
-  const [loggedIn, setLoggedIn] = useState(false)
+  firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
 
   const actionCodeSettings = {
     // URL you want to redirect back to. The domain (www.example.com) for this
@@ -54,10 +58,7 @@ const Login = () => {
   }
 
   useEffect(() => {
-    if (isSignInWithEmailLink(auth, window.location.href)) {
-      // Additional state parameters can also be passed via URL.
-      // This can be used to continue the user's intended action before triggering
-      // the sign-in operation.
+    if (isSignInWithEmailLink(auth, window.location.href) && !isAuthenticated) {
       // Get the email if available. This should be available if the user completes
       // the flow on the same device where they started it.
       let email = window.localStorage.getItem('emailForSignIn')
@@ -66,28 +67,30 @@ const Login = () => {
         // attacks, ask the user to provide the associated email again. For example:
         email = window.prompt('Please provide your email for confirmation')
       }
-      // The client SDK will parse the code from the link for you.
-
       signInWithEmailLink(auth, email!, window.location.href)
         .then((result) => {
-          // Clear email from storage.
-          //   window.localStorage.removeItem('emailForSignIn')
-          console.log('trigger')
-          console.log(loggedIn)
-          console.log(result)
-          setLoggedIn(true)
+          window.localStorage.removeItem('emailForSignIn')
+          console.log('onInit')
+          dispatch(setAuthenticationStatus(true))
         })
         .catch((error) => {
-          // Some error occurred, you can inspect the code: error.code
-          // Common errors could be invalid email and invalid or expired OTPs.
+          console.log(error)
         })
-    } else {
-      console.log('not logged in')
-      console.log(loggedIn)
     }
-  }, [])
+  }, [auth, dispatch, isAuthenticated])
 
-  return <div>{!loggedIn ? <button onClick={doLogin}>login</button> : <div>LoggedIn!</div>}</div>
+  useEffect(() => {
+    firebase.auth().onAuthStateChanged((user) => {
+      if (user?.emailVerified) {
+        console.log('onChange')
+        dispatch(setAuthenticationStatus(true))
+      } else {
+        firebase.auth().signOut()
+      }
+    })
+  }, [dispatch])
+
+  return <div>{<button onClick={doLogin}>login</button>}</div>
 }
 
 export default Login
