@@ -1,0 +1,24 @@
+body {
+  background-color: #faf5e8;
+}
+
+.MuiListItem-root {
+  font-family: 'Satoshi';
+  display: flex;
+  justify-content: space-between;
+}
+.MuiListItemButton-root {
+  flex-grow: 0 !important;
+  padding-right: 0 !important;
+}
+.MuiListItemIcon-root {
+  min-width: 0 !important;
+}
+.MuiListItem-root__text {
+  font-family: 'Satoshi';
+  display: flex;
+}
+
+.MuiListItem-root__text div {
+  padding-right: 12px;
+}
