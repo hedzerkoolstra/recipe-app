@@ -1,7 +1,8 @@
 import { Provider } from 'react-redux'
 import { createTheme, ThemeProvider } from '@mui/material/styles'
-import { store } from './store/store'
+// import , theme from './theme'
 import App from './App'
+import { store } from './store/store'
 import './style/style.css'
 
 function AppContainer() {

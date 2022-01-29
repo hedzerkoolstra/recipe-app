@@ -25,7 +25,6 @@ const CategorySelector = () => {
     try {
       await dispatch(setActiveCategory(category)).then(unwrapResult)
     } catch (error) {
-      console.log('fail')
       console.log(error)
     }
   }

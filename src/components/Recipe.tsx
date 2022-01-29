@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from 'react'
+import { useMemo, useState, useCallback, useEffect } from 'react'
 import ContentEditable from 'react-contenteditable'
 import { unwrapResult } from '@reduxjs/toolkit'
 import { Card, CardHeader, CardContent, CardActions, Button, IconButton } from '@mui/material'
@@ -24,6 +24,10 @@ const Recipe = (props: IProps) => {
     props.recipe.Ingredients
   )
 
+  useEffect(() => {
+    setRecipeIngredients(props.recipe.Ingredients)
+  }, [props.recipe.Ingredients])
+
   const updateRecipeName = (evt: any) => {
     setIsDirty(true)
     setRecipeName(evt.target.value)
@@ -37,12 +41,12 @@ const Recipe = (props: IProps) => {
   const updateIngredient = useCallback(
     (updatedIngredient: IngredientModel) => {
       setIsDirty(true)
-      const updatedIngredients = props.recipe.Ingredients.map((ingredient) => {
+      const updatedIngredients = recipeIngredients.map((ingredient) => {
         return ingredient.Id === updatedIngredient.Id ? updatedIngredient : ingredient
       })
       setRecipeIngredients(updatedIngredients)
     },
-    [props]
+    [recipeIngredients]
   )
 
   const dispatchSaveRecipe = async () => {
@@ -68,7 +72,7 @@ const Recipe = (props: IProps) => {
     }
   }
 
-  const dispatchDeleteIngredient = async (ingredientId: number) => {
+  const dispatchDeleteIngredient = async (ingredientId: string) => {
     try {
       await dispatch(
         deleteIngredient({ recipeId: props.recipe.Id!, ingredientId: ingredientId })
@@ -89,7 +93,7 @@ const Recipe = (props: IProps) => {
   const ingredientList = useMemo(() => {
     return (
       <CardContent>
-        {props.recipe.Ingredients.map((ingredient: any) => (
+        {recipeIngredients.map((ingredient: any) => (
           <Ingredient
             key={ingredient.Id}
             Ingredient={ingredient}
@@ -111,7 +115,7 @@ const Recipe = (props: IProps) => {
     )
     // TODO: Fix this properly
     // eslint-disable-next-line
-  }, [props, updateIngredient])
+  }, [props, updateIngredient, recipeIngredients])
 
   return (
     <Card raised={isDirty ? true : false}>
