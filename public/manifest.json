@@ -6,6 +6,16 @@
       "src": "favicon.ico",
       "sizes": "64x64 32x32 24x24 16x16",
       "type": "image/x-icon"
+    },
+    {
+      "src": "fruit-salad512.png",
+      "sizes": "512x512 64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "fruit-salad32.png",
+      "sizes": "32x32 24x24 16x16",
+      "type": "image/png"
     }
   ],
   "start_url": ".",
