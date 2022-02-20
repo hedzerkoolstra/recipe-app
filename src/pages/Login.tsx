@@ -57,7 +57,6 @@ const Login = () => {
           setAppIsPending(false)
         })
         .catch((error) => {
-          console.log(error)
           setAppIsPending(false)
         })
     }

@@ -1,6 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import { RecipeModel, IngredientModel } from '../models'
-import { RootState } from './store'
 import {
   getFirestore,
   doc,
@@ -48,47 +47,19 @@ const createId = () => {
 export const name = 'slice'
 const db = getFirestore()
 
-export const createIngredient = createAsyncThunk(
-  `${name}/createIngredient`,
-  async (recipe: RecipeModel, thunkApi) => {
-    const { dispatch, getState } = thunkApi
-    const uid = (getState() as { slice: AppState }).slice.uid
-    const emptyIngredient: IngredientModel = {
-      Name: 'New ingredient',
-      Id: createId(),
-      UnitType: 'Unit',
-      Amount: 0,
-    }
-    const newRecipe = { ...recipe, Ingredients: [...recipe.Ingredients, emptyIngredient] }
-    await setDoc(doc(db, 'users', uid!, 'Recipes', recipe.Id!), newRecipe)
-    dispatch(fetchRecipes())
-  }
-)
-
 export const createRecipe = createAsyncThunk(`${name}/createRecipe`, async (_, thunkApi) => {
   const { dispatch, getState } = thunkApi
   const uid = (getState() as { slice: AppState }).slice.uid
-  const currentState: RootState = getState() as RootState
   const newDoc = await addDoc(collection(db, 'users', uid!, 'Recipes'), {})
   const emptyRecipe: RecipeModel = {
     Name: 'New recipe',
     Id: newDoc.id,
-    Category: (currentState.slice as AppState).activeCategory,
+    Category: '',
     Ingredients: [],
   }
   await setDoc(doc(db, 'users', uid!, 'Recipes', newDoc.id), emptyRecipe)
   dispatch(fetchRecipes())
 })
-
-export const updateRecipe = createAsyncThunk(
-  `${name}/saveRecipe`,
-  async (recipe: RecipeModel, thunkApi) => {
-    const { dispatch, getState } = thunkApi
-    const uid = (getState() as { slice: AppState }).slice.uid
-    await setDoc(doc(db, 'users', uid!, 'Recipes', recipe.Id!), recipe)
-    dispatch(fetchRecipes())
-  }
-)
 
 export const deleteRecipe = createAsyncThunk(
   `${name}/deleteRecipe`,
@@ -100,24 +71,59 @@ export const deleteRecipe = createAsyncThunk(
   }
 )
 
-export const deleteIngredient = createAsyncThunk(
-  `${name}/deleteIngredient`,
-  async ({ recipeId, ingredientId }: { recipeId: string; ingredientId: string }, thunkApi) => {
+export const saveRecipe = createAsyncThunk(
+  `${name}/saveRecipe`,
+  async (recipeId: string, thunkApi) => {
     const { dispatch, getState } = thunkApi
-    const recipes = (getState() as { slice: AppState }).slice.recipes
     const uid = (getState() as { slice: AppState }).slice.uid
-    for (const recipe of recipes) {
-      if (recipe.Id === recipeId) {
-        const updatedIngredients = recipe.Ingredients.filter(
-          (ingredient) => ingredient.Id !== ingredientId
-        )
-        await setDoc(doc(db, 'users', uid!, 'Recipes', recipe.Id!), {
-          ...recipe,
-          Ingredients: updatedIngredients,
-        })
-      }
+    const recipes = (getState() as { slice: AppState }).slice.recipes
+    const updatedRecipe = recipes.find((recipe) => recipe.Id === recipeId)
+    if (updatedRecipe) {
+      await setDoc(doc(db, 'users', uid!, 'Recipes', recipeId), updatedRecipe)
     }
     dispatch(fetchRecipes())
+  }
+)
+
+export const createIngredient = createAsyncThunk(
+  `${name}/createIngredient`,
+  async (recipe: RecipeModel, thunkApi) => {
+    const { dispatch, getState } = thunkApi
+    const uid = (getState() as { slice: AppState }).slice.uid
+    const emptyIngredient: IngredientModel = {
+      Name: 'New ingredient',
+      Id: createId(),
+      UnitType: 'Unit',
+      Amount: 0,
+    }
+    const updatedRecipe = { ...recipe, Ingredients: [...recipe.Ingredients, emptyIngredient] }
+    dispatch(updateRecipeUI(updatedRecipe))
+    try {
+      await setDoc(doc(db, 'users', uid!, 'Recipes', recipe.Id!), updatedRecipe)
+    } catch (error) {
+      dispatch(updateRecipeUI(recipe))
+    }
+  }
+)
+
+export const deleteIngredient = createAsyncThunk(
+  `${name}/deleteIngredient`,
+  async ({ recipe, ingredientId }: { recipe: RecipeModel; ingredientId: string }, thunkApi) => {
+    const { dispatch, getState } = thunkApi
+    const uid = (getState() as { slice: AppState }).slice.uid
+    const updatedIngredients = recipe.Ingredients.filter(
+      (ingredient) => ingredient.Id !== ingredientId
+    )
+    const updatedRecipe = {
+      ...recipe,
+      Ingredients: updatedIngredients,
+    }
+    dispatch(updateRecipeUI(updatedRecipe))
+    try {
+      await setDoc(doc(db, 'users', uid!, 'Recipes', recipe.Id!), updatedRecipe)
+    } catch (error) {
+      dispatch(updateRecipeUI(recipe))
+    }
   }
 )
 
@@ -141,6 +147,11 @@ const counterSlice: any = createSlice({
     },
   },
   reducers: {
+    updateRecipeUI(state, action) {
+      state.recipes = state.recipes.map((recipe) =>
+        recipe.Id === action.payload.Id ? action.payload : recipe
+      )
+    },
     setActiveCategory(state, action) {
       state.activeCategory = action.payload
     },
@@ -153,5 +164,6 @@ const counterSlice: any = createSlice({
   },
 })
 
-export const { setActiveCategory, setAuthenticationStatus, setUserId } = counterSlice.actions
+export const { updateRecipeUI, setActiveCategory, setAuthenticationStatus, setUserId } =
+  counterSlice.actions
 export default counterSlice.reducer

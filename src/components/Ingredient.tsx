@@ -7,6 +7,7 @@ interface Props {
   Ingredient: IngredientModel
   emitUpdateIngredient: (ingredient: IngredientModel) => void
   emitDeleteIngredient: (ingredientId: string) => void
+  emitSaveRecipe: () => void
 }
 
 const Ingredient = (props: Props) => {
@@ -32,17 +33,20 @@ const Ingredient = (props: Props) => {
         <ContentEditable
           key={`${props.Ingredient.Id}-Name`}
           onChange={updateName}
+          onBlur={props.emitSaveRecipe}
           html={props.Ingredient.Name}
           className="MuiListItem-root__text__name"
         />
         <ContentEditable
           key={`${props.Ingredient.Id}-Amount`}
           onChange={updateAmount}
+          onBlur={props.emitSaveRecipe}
           html={props.Ingredient.Amount.toString()}
         />
         <ContentEditable
           key={`${props.Ingredient.Id}-UnitType`}
           onChange={updateUnitType}
+          onBlur={props.emitSaveRecipe}
           html={props.Ingredient.UnitType}
         />
       </div>

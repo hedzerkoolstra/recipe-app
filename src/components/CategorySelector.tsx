@@ -30,11 +30,16 @@ const CategorySelector = () => {
   }
 
   return (
-    <Stack direction="row" spacing={4} sx={{ my: 4 }}>
+    <Stack direction="row" sx={{ my: 4 }} flexWrap="wrap" justifyContent="flex-start">
       <Button
         onClick={() => dispatchSetActiveCategory(null)}
         variant="contained"
-        sx={{ fontWeight: `${!activeCategory ? 'bold' : 'dark'}` }}
+        sx={{
+          fontWeight: `${!activeCategory ? 'bold' : 'dark'}`,
+          ml: '0rem',
+          mr: '1rem',
+          my: '0.5rem',
+        }}
       >
         {'all'}
       </Button>
@@ -45,7 +50,12 @@ const CategorySelector = () => {
             key={category}
             onClick={() => dispatchSetActiveCategory(category)}
             variant="contained"
-            sx={{ fontWeight: `${activeCategory === category ? 'bold' : 'normal'}` }}
+            sx={{
+              fontWeight: `${activeCategory === category ? 'bold' : 'normal'}`,
+              ml: '0rem',
+              mr: '1rem',
+              my: '0.5rem',
+            }}
           >
             {category}
           </Button>

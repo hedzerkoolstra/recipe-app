@@ -1,12 +1,17 @@
-import { useMemo, useState, useCallback, useEffect } from 'react'
+import { useMemo, useCallback } from 'react'
 import ContentEditable from 'react-contenteditable'
 import { unwrapResult } from '@reduxjs/toolkit'
 import { Card, CardHeader, CardContent, CardActions, Button, IconButton } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
-import SaveIcon from '@mui/icons-material/Save'
 import AddIcon from '@mui/icons-material/Add'
 import { RecipeModel, IngredientModel } from '../models'
-import { updateRecipe, deleteRecipe, deleteIngredient, createIngredient } from '../store/slice'
+import {
+  saveRecipe,
+  updateRecipeUI,
+  deleteRecipe,
+  createIngredient,
+  deleteIngredient,
+} from '../store/slice'
 import { useAppDispatch } from '../store/hooks'
 
 import Ingredient from '../components/Ingredient'
@@ -17,52 +22,31 @@ interface IProps {
 const Recipe = (props: IProps) => {
   const dispatch = useAppDispatch()
 
-  const [isDirty, setIsDirty] = useState(false)
-  const [recipeName, setRecipeName] = useState<string>(props.recipe.Name)
-  const [recipeCategory, setRecipeCategory] = useState<string | null>(props.recipe.Category)
-  const [recipeIngredients, setRecipeIngredients] = useState<IngredientModel[]>(
-    props.recipe.Ingredients
-  )
-
-  useEffect(() => {
-    setRecipeIngredients(props.recipe.Ingredients)
-  }, [props.recipe.Ingredients])
-
   const updateRecipeName = (evt: any) => {
-    setIsDirty(true)
-    setRecipeName(evt.target.value)
+    dispatch(updateRecipeUI({ ...props.recipe, Name: evt.target.value }))
   }
 
   const updateRecipeCategory = (evt: any) => {
-    setIsDirty(true)
-    setRecipeCategory(evt.target.value)
+    dispatch(updateRecipeUI({ ...props.recipe, Category: evt.target.value }))
   }
 
-  const updateIngredient = useCallback(
+  const dispatchUpdateIngredient = useCallback(
     (updatedIngredient: IngredientModel) => {
-      setIsDirty(true)
-      const updatedIngredients = recipeIngredients.map((ingredient) => {
+      const updatedIngredients = props.recipe.Ingredients.map((ingredient) => {
         return ingredient.Id === updatedIngredient.Id ? updatedIngredient : ingredient
       })
-      setRecipeIngredients(updatedIngredients)
+      dispatch(updateRecipeUI({ ...props.recipe, Ingredients: updatedIngredients }))
     },
-    [recipeIngredients]
+    [dispatch, props.recipe]
   )
 
-  const dispatchSaveRecipe = async () => {
-    const updatedRecipe: RecipeModel = {
-      ...props.recipe,
-      Name: recipeName,
-      Category: recipeCategory,
-      Ingredients: recipeIngredients,
-    }
+  const dispatchSaveRecipe = useCallback(async () => {
     try {
-      await dispatch(updateRecipe(updatedRecipe)).then(unwrapResult)
-      setIsDirty(false)
+      await dispatch(saveRecipe(props.recipe.Id!)).then(unwrapResult)
     } catch (error) {
       console.log('fail')
     }
-  }
+  }, [dispatch, props])
 
   const dispatchDeleteRecipe = async () => {
     try {
@@ -72,33 +56,37 @@ const Recipe = (props: IProps) => {
     }
   }
 
-  const dispatchDeleteIngredient = async (ingredientId: string) => {
-    try {
-      await dispatch(
-        deleteIngredient({ recipeId: props.recipe.Id!, ingredientId: ingredientId })
-      ).then(unwrapResult)
-    } catch (error) {
-      console.log('fail')
-    }
-  }
+  const dispatchDeleteIngredient = useCallback(
+    async (ingredientId: string) => {
+      try {
+        await dispatch(deleteIngredient({ recipe: props.recipe, ingredientId: ingredientId })).then(
+          unwrapResult
+        )
+      } catch (error) {
+        console.log('fail')
+      }
+    },
+    [dispatch, props]
+  )
 
-  const dispatchAddIngredient = async () => {
+  const dispatchAddIngredient = useCallback(async () => {
     try {
       await dispatch(createIngredient(props.recipe)).then(unwrapResult)
     } catch (error) {
       console.log('fail')
     }
-  }
+  }, [dispatch, props])
 
   const ingredientList = useMemo(() => {
     return (
       <CardContent>
-        {recipeIngredients.map((ingredient: any) => (
+        {props.recipe.Ingredients.map((ingredient: any) => (
           <Ingredient
             key={ingredient.Id}
             Ingredient={ingredient}
-            emitUpdateIngredient={updateIngredient}
+            emitUpdateIngredient={dispatchUpdateIngredient}
             emitDeleteIngredient={dispatchDeleteIngredient}
+            emitSaveRecipe={dispatchSaveRecipe}
           />
         ))}
 
@@ -113,19 +101,31 @@ const Recipe = (props: IProps) => {
         </Button>
       </CardContent>
     )
-    // TODO: Fix this properly
-    // eslint-disable-next-line
-  }, [props, updateIngredient, recipeIngredients])
+  }, [
+    props,
+    dispatchAddIngredient,
+    dispatchDeleteIngredient,
+    dispatchSaveRecipe,
+    dispatchUpdateIngredient,
+  ])
 
   return (
-    <Card raised={isDirty ? true : false}>
+    <Card>
       <CardHeader
-        title={<ContentEditable html={recipeName} disabled={false} onChange={updateRecipeName} />}
+        title={
+          <ContentEditable
+            html={props.recipe.Name}
+            disabled={false}
+            onChange={updateRecipeName}
+            onBlur={dispatchSaveRecipe}
+          />
+        }
         subheader={
           <ContentEditable
-            html={recipeCategory || 'No category'}
+            html={props.recipe.Category || 'No category'}
             disabled={false}
             onChange={updateRecipeCategory}
+            onBlur={dispatchSaveRecipe}
           />
         }
       ></CardHeader>
@@ -133,13 +133,6 @@ const Recipe = (props: IProps) => {
       {ingredientList}
 
       <CardActions sx={{ justifyContent: 'flex-end' }}>
-        <IconButton
-          onClick={dispatchSaveRecipe}
-          aria-label="save recipe"
-          disabled={!isDirty || !recipeName}
-        >
-          <SaveIcon />
-        </IconButton>
         <IconButton onClick={dispatchDeleteRecipe} aria-label="delete recipe">
           <DeleteIcon />
         </IconButton>
